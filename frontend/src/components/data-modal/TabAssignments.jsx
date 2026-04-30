@@ -2,12 +2,12 @@ import { toast, confirm as swalConfirm } from '../../utils/alert';
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 
-export default function TabAssignments({ grades }) {
+export default function TabAssignments({ grades, sharedGrade = '', onGradeChange }) {
   const [teachers, setTeachers]       = useState([]);
   const [subjects, setSubjects]       = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [roomDayPeriods, setRoomDayPeriods] = useState({});
-  const [selectedGrade, setSelectedGrade]   = useState('');
+  const [selectedGrade, setSelectedGrade]   = useState(sharedGrade);
   const [rooms, setRooms]             = useState([]);
   const [loading, setLoading]         = useState(true);
   const [submitting, setSubmitting]   = useState(false);
@@ -51,7 +51,7 @@ export default function TabAssignments({ grades }) {
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
-  useEffect(() => { if (grades?.length && !selectedGrade) setSelectedGrade(String(grades[0].id)); }, [grades]);
+  useEffect(() => { if (!selectedGrade && grades?.length) setSelectedGrade(String(grades[0].id)); }, [grades]);
   useEffect(() => {
     if (selectedGrade) {
       loadRooms(selectedGrade);
@@ -141,7 +141,7 @@ export default function TabAssignments({ grades }) {
         <i className="bi bi-building text-pink fs-5" />
         <label className="fw-semibold mb-0" style={{ color: 'var(--pink-dark)' }}>ชั้นเรียน</label>
         <select className="form-select" style={{ width: 'auto', minWidth: 200, borderColor: 'var(--pink)', color: 'var(--pink-dark)', fontWeight: 600 }}
-          value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)}>
+          value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); onGradeChange?.(e.target.value); }}>
           {grades.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
       </div>

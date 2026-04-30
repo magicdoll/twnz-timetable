@@ -23,6 +23,7 @@ const TABS = [
 export default function DataModal({ show, onClose }) {
   const [tab, setTab] = useState('teachers');
   const [grades, setGrades] = useState([]);
+  const [sharedGrade, setSharedGrade] = useState('');
 
   const loadGrades = useCallback(async () => {
     try { const { data } = await api.get('/grades'); setGrades(data); } catch {}
@@ -31,6 +32,10 @@ export default function DataModal({ show, onClose }) {
   useEffect(() => {
     if (show) { loadGrades(); }
   }, [show, loadGrades]);
+
+  useEffect(() => {
+    if (grades.length && !sharedGrade) setSharedGrade(String(grades[0].id));
+  }, [grades]);
 
   if (!show) return null;
 
@@ -79,12 +84,12 @@ export default function DataModal({ show, onClose }) {
           {/* Body */}
           <div className="modal-body p-4" style={{ overflowY: 'auto', background: 'var(--bg)' }}>
             {tab === 'teachers'    && <TabTeachers />}
-            {tab === 'subjects'    && <TabSubjects grades={grades} />}
+            {tab === 'subjects'    && <TabSubjects grades={grades} sharedGrade={sharedGrade} onGradeChange={setSharedGrade} />}
             {tab === 'grades'      && <TabGrades onGradesChange={setGrades} />}
-            {tab === 'periods'     && <TabPeriodSlots grades={grades} />}
-            {tab === 'dayperiods'  && <TabDayPeriods grades={grades} />}
-            {tab === 'assignments' && <TabAssignments grades={grades} />}
-            {tab === 'fixedslots'  && <TabFixedSlots grades={grades} />}
+            {tab === 'periods'     && <TabPeriodSlots grades={grades} sharedGrade={sharedGrade} onGradeChange={setSharedGrade} />}
+            {tab === 'dayperiods'  && <TabDayPeriods grades={grades} sharedGrade={sharedGrade} onGradeChange={setSharedGrade} />}
+            {tab === 'assignments' && <TabAssignments grades={grades} sharedGrade={sharedGrade} onGradeChange={setSharedGrade} />}
+            {tab === 'fixedslots'  && <TabFixedSlots grades={grades} sharedGrade={sharedGrade} onGradeChange={setSharedGrade} />}
             {tab === 'unavailable' && <TabUnavailable grades={grades} />}
           </div>
         </div>

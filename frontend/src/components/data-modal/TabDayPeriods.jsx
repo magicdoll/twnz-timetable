@@ -30,8 +30,8 @@ function NumInput({ value, onChange, max, danger }) {
   );
 }
 
-export default function TabDayPeriods({ grades }) {
-  const [selectedGrade, setSelectedGrade] = useState('');
+export default function TabDayPeriods({ grades, sharedGrade = '', onGradeChange }) {
+  const [selectedGrade, setSelectedGrade] = useState(sharedGrade);
   const [rooms, setRooms] = useState([]);
   const [periods, setPeriods] = useState({});
   const [maxPeriods, setMaxPeriods] = useState(6);
@@ -70,7 +70,7 @@ export default function TabDayPeriods({ grades }) {
   }, []);
 
   useEffect(() => { if (selectedGrade) load(selectedGrade); }, [selectedGrade, load]);
-  useEffect(() => { if (grades?.length && !selectedGrade) setSelectedGrade(String(grades[0].id)); }, [grades]);
+  useEffect(() => { if (!selectedGrade && grades?.length) setSelectedGrade(String(grades[0].id)); }, [grades]);
 
   const setCell = (roomId, day, val) => {
     const v = Math.max(0, Math.min(maxPeriods, parseInt(val) || 0));
@@ -125,7 +125,7 @@ export default function TabDayPeriods({ grades }) {
         <i className="bi bi-building text-pink fs-5" />
         <label className="fw-semibold mb-0" style={{ color: 'var(--pink-dark)' }}>เลือกชั้นเรียน</label>
         <select className="form-select" style={{ width: 'auto', minWidth: 200, borderColor: 'var(--pink)', color: 'var(--pink-dark)', fontWeight: 600 }}
-          value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)}>
+          value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); onGradeChange?.(e.target.value); }}>
           {grades.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
         <span className="badge rounded-pill px-3 py-2 ms-auto"

@@ -4,13 +4,13 @@ import api from '../../services/api';
 
 const DAYS = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์'];
 
-export default function TabFixedSlots({ grades }) {
+export default function TabFixedSlots({ grades, sharedGrade = '', onGradeChange }) {
   const [assignments, setAssignments] = useState([]);
   const [fixedSlots, setFixedSlots]   = useState([]);
   const [roomDayPeriods, setRoomDayPeriods] = useState({});
   const [loading, setLoading]         = useState(true);
 
-  const [selectedGrade,   setSelectedGrade]   = useState('');
+  const [selectedGrade,   setSelectedGrade]   = useState(sharedGrade);
   const [selectedTeacher, setSelectedTeacher] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedRoom,    setSelectedRoom]    = useState('');
@@ -26,7 +26,7 @@ export default function TabFixedSlots({ grades }) {
 
   useEffect(() => { loadAll(); }, [loadAll]);
   useEffect(() => {
-    if (grades?.length && !selectedGrade) setSelectedGrade(String(grades[0].id));
+    if (!selectedGrade && grades?.length) setSelectedGrade(String(grades[0].id));
   }, [grades]);
 
   useEffect(() => {
@@ -174,7 +174,7 @@ export default function TabFixedSlots({ grades }) {
                 ชั้นเรียน
               </label>
               <select className="form-select" value={selectedGrade}
-                onChange={(e) => { setSelectedGrade(e.target.value); setSelectedTeacher(''); setSelectedSubject(''); setSelectedRoom(''); }}>
+                onChange={(e) => { setSelectedGrade(e.target.value); setSelectedTeacher(''); setSelectedSubject(''); setSelectedRoom(''); onGradeChange?.(e.target.value); }}>
                 {grades.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             </div>

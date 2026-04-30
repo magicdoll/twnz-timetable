@@ -11,8 +11,8 @@ const DEFAULT_SLOTS = [
   { period_number: 6, start_time: '14:30', end_time: '15:30' },
 ];
 
-export default function TabPeriodSlots({ grades }) {
-  const [selectedGrade, setSelectedGrade] = useState('');
+export default function TabPeriodSlots({ grades, sharedGrade = '', onGradeChange }) {
+  const [selectedGrade, setSelectedGrade] = useState(sharedGrade);
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -38,7 +38,7 @@ export default function TabPeriodSlots({ grades }) {
   }, [selectedGrade, loadSlots]);
 
   useEffect(() => {
-    if (grades?.length > 0 && !selectedGrade) setSelectedGrade(String(grades[0].id));
+    if (!selectedGrade && grades?.length) setSelectedGrade(String(grades[0].id));
   }, [grades]);
 
   const updateSlot = (idx, field, val) => {
@@ -82,7 +82,7 @@ export default function TabPeriodSlots({ grades }) {
           <div className="card-header d-flex justify-content-between align-items-center">
             <span><i className="bi bi-clock me-2" />ตั้งค่าเวลาคาบเรียน</span>
             <select className="form-select form-select-sm" style={{ width: 'auto' }}
-              value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)}>
+              value={selectedGrade} onChange={(e) => { setSelectedGrade(e.target.value); onGradeChange?.(e.target.value); }}>
               {grades.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}

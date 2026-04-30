@@ -23,16 +23,16 @@ const PRESET_COLORS = [
 
 const EMPTY_FORM = { name: '', code: '', color_bg: '#FFFFFF', color_border: '#CCCCCC', color_text: '#333333' };
 
-export default function TabSubjects({ grades = [] }) {
+export default function TabSubjects({ grades = [], sharedGrade = '', onGradeChange }) {
   const [subjects, setSubjects] = useState([]);
-  const [selectedGrade, setSelectedGrade] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState(sharedGrade);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editing, setEditing] = useState(null);
   const [msg, setMsg] = useState({ type: '', text: '' });
 
   useEffect(() => {
-    if (grades?.length && !selectedGrade) setSelectedGrade(String(grades[0].id));
+    if (!selectedGrade && grades?.length) setSelectedGrade(String(grades[0].id));
   }, [grades]);
 
   const load = useCallback(async () => {
@@ -93,7 +93,7 @@ export default function TabSubjects({ grades = [] }) {
         <label className="fw-semibold mb-0" style={{ color: 'var(--pink-dark)' }}>ชั้นเรียน</label>
         <select className="form-select" style={{ width: 'auto', minWidth: 200, borderColor: 'var(--pink)', color: 'var(--pink-dark)', fontWeight: 600 }}
           value={selectedGrade}
-          onChange={(e) => { setSelectedGrade(e.target.value); setEditing(null); setForm(EMPTY_FORM); }}>
+          onChange={(e) => { setSelectedGrade(e.target.value); setEditing(null); setForm(EMPTY_FORM); onGradeChange?.(e.target.value); }}>
           {grades.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
         </select>
         <span className="badge rounded-pill px-3" style={{ background: 'var(--pink-light)', color: 'var(--pink-dark)', fontSize: '0.85rem' }}>
