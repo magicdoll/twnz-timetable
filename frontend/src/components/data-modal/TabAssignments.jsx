@@ -54,7 +54,12 @@ export default function TabAssignments({ grades }) {
 
   useEffect(() => { loadAll(); }, [loadAll]);
   useEffect(() => { if (grades?.length && !selectedGrade) setSelectedGrade(String(grades[0].id)); }, [grades]);
-  useEffect(() => { if (selectedGrade) loadRooms(selectedGrade); }, [selectedGrade, loadRooms]);
+  useEffect(() => {
+    if (selectedGrade) {
+      loadRooms(selectedGrade);
+      setForm((p) => ({ ...p, subject_id: '' }));
+    }
+  }, [selectedGrade, loadRooms]);
 
   // Toggle ห้องใน selectedRooms
   const toggleRoom = (roomId) => {
@@ -183,7 +188,9 @@ export default function TabAssignments({ grades }) {
                 <select className="form-select" value={form.subject_id}
                   onChange={(e) => setForm((p) => ({ ...p, subject_id: e.target.value }))}>
                   <option value="">— เลือกวิชา —</option>
-                  {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}{s.code ? ` (${s.code})` : ''}</option>)}
+                  {subjects.filter((s) => String(s.grade_level_id) === selectedGrade).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}{s.code ? ` (${s.code})` : ''}</option>
+                  ))}
                 </select>
                 {chosenSubject && (
                   <div className="mt-2 px-3 py-1 rounded d-inline-flex align-items-center gap-2"

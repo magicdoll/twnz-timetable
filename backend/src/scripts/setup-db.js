@@ -82,12 +82,14 @@ async function setup() {
       CREATE TABLE IF NOT EXISTS subjects (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
+        grade_level_id INT,
         name VARCHAR(100) NOT NULL,
         code VARCHAR(20),
         color_bg VARCHAR(7) NOT NULL DEFAULT '#FFFFFF',
         color_border VARCHAR(7) NOT NULL DEFAULT '#CCCCCC',
         color_text VARCHAR(7) NOT NULL DEFAULT '#333333',
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (grade_level_id) REFERENCES grade_levels(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
 
       CREATE TABLE IF NOT EXISTS teachers (

@@ -112,7 +112,10 @@ export default function TabFixedSlots({ grades }) {
               <select className="form-select" value={form.subject_id}
                 onChange={(e) => setForm((p) => ({ ...p, subject_id: e.target.value }))}>
                 <option value="">— เลือกวิชา —</option>
-                {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {(form.scope !== 'all' && form.grade_level_id
+                  ? subjects.filter((s) => String(s.grade_level_id) === String(form.grade_level_id))
+                  : subjects
+                ).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
 

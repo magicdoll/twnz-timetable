@@ -11,8 +11,8 @@ import api from '../../services/api';
 
 const TABS = [
   { key: 'teachers',    icon: 'bi-people',        label: 'ครูผู้สอน' },
-  { key: 'subjects',    icon: 'bi-book',           label: 'วิชา' },
   { key: 'grades',      icon: 'bi-building',       label: 'ชั้นเรียน & ห้อง' },
+  { key: 'subjects',    icon: 'bi-book',           label: 'วิชา' },
   { key: 'periods',     icon: 'bi-clock',          label: 'เวลาคาบ' },
   { key: 'dayperiods',  icon: 'bi-calendar3',      label: 'คาบ/วัน' },
   { key: 'assignments', icon: 'bi-person-lines-fill', label: 'มอบหมายสอน' },
@@ -79,7 +79,7 @@ export default function DataModal({ show, onClose }) {
           {/* Body */}
           <div className="modal-body p-4" style={{ overflowY: 'auto', background: 'var(--bg)' }}>
             {tab === 'teachers'    && <TabTeachers />}
-            {tab === 'subjects'    && <TabSubjects />}
+            {tab === 'subjects'    && <TabSubjects grades={grades} />}
             {tab === 'grades'      && <TabGrades onGradesChange={setGrades} />}
             {tab === 'periods'     && <TabPeriodSlots grades={grades} />}
             {tab === 'dayperiods'  && <TabDayPeriods grades={grades} />}
