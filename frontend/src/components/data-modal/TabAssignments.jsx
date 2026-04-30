@@ -23,14 +23,12 @@ export default function TabAssignments({ grades }) {
 
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg({ type: '', text: '' }), 3500); };
 
-  const [fixedSlots, setFixedSlots] = useState([]);
-
   const loadAll = useCallback(async () => {
     try {
-      const [t, s, a, fs] = await Promise.all([
-        api.get('/teachers'), api.get('/subjects'), api.get('/assignments'), api.get('/fixed-slots'),
+      const [t, s, a] = await Promise.all([
+        api.get('/teachers'), api.get('/subjects'), api.get('/assignments'),
       ]);
-      setTeachers(t.data); setSubjects(s.data); setAssignments(a.data); setFixedSlots(fs.data);
+      setTeachers(t.data); setSubjects(s.data); setAssignments(a.data);
     } catch {}
     setLoading(false);
   }, []);
@@ -117,13 +115,6 @@ export default function TabAssignments({ grades }) {
   const roomAssigned = (roomId) => gradeAssignments.filter((a) => a.room_id === roomId).reduce((s, a) => s + a.periods_per_week, 0);
   const roomTotal    = (roomId) => roomDayPeriods[roomId] || 0;
   const teacherWorkload = (tid) => assignments.filter((a) => a.teacher_id === tid).reduce((s, a) => s + a.periods_per_week, 0);
-
-  // Fixed slots ที่ apply กับห้องนี้ (scope: all / grade / room)
-  const getRoomFixedSlots = (roomId) => fixedSlots.filter((f) =>
-    f.scope === 'all' ||
-    (f.scope === 'grade' && String(f.grade_level_id) === selectedGrade) ||
-    (f.scope === 'room'  && String(f.room_id) === String(roomId))
-  );
 
   // subject ที่เลือก (สำหรับ preview สี)
   const chosenSubject = subjects.find((s) => String(s.id) === String(form.subject_id));
@@ -308,14 +299,11 @@ export default function TabAssignments({ grades }) {
           {rooms.length === 0
             ? <div className="text-center py-4 text-muted">ชั้นเรียนนี้ยังไม่มีห้อง</div>
             : rooms.map((r) => {
-              const assigned   = roomAssigned(r.id);
-              const roomFixed  = getRoomFixedSlots(r.id);
-              const totalUsed  = assigned + roomFixed.length;
-              const total      = roomTotal(r.id);
-              const pct        = total > 0 ? Math.min(100, Math.round((totalUsed / total) * 100)) : 0;
-              const done       = total > 0 && totalUsed === total;
-              const over       = totalUsed > total;
-              const roomItems  = gradeAssignments.filter((a) => a.room_id === r.id);
+              const assigned  = roomAssigned(r.id);
+              const total     = roomTotal(r.id);
+              const done      = total > 0 && assigned === total;
+              const over      = assigned > total;
+              const roomItems = gradeAssignments.filter((a) => a.room_id === r.id);
 
               return (
                 <div key={r.id} className="card card-pink mb-3">
@@ -327,31 +315,16 @@ export default function TabAssignments({ grades }) {
                         {over && <span className="badge bg-danger">⚠️ เกิน</span>}
                       </div>
                       <span className="text-muted small fw-semibold">
-                        {totalUsed}/{total} คาบ/สัปดาห์
-                        {roomFixed.length > 0 && (
-                          <span className="ms-1" style={{ color: '#6366f1', fontSize: '0.75rem' }}>
-                            (รวม 🔒 {roomFixed.length})
-                          </span>
-                        )}
+                        {assigned}/{total} คาบ/สัปดาห์
                       </span>
                     </div>
 
-                    {/* Progress bar — แบ่งสัดส่วน assignments vs fixed */}
                     <div className="progress mb-3" style={{ height: 10, borderRadius: 8, background: '#f0f0f0' }}>
-                      {/* ส่วน assignments */}
                       <div className="progress-bar" style={{
                         width: total > 0 ? `${Math.min(100, Math.round((assigned / total) * 100))}%` : '0%',
-                        borderRadius: roomFixed.length === 0 ? 8 : '8px 0 0 8px',
+                        borderRadius: 8,
                         background: over ? '#dc3545' : done ? '#28a745' : 'linear-gradient(90deg,var(--pink),var(--orange))',
                       }} />
-                      {/* ส่วน fixed slots */}
-                      {roomFixed.length > 0 && (
-                        <div className="progress-bar" style={{
-                          width: total > 0 ? `${Math.min(100 - Math.round((assigned / total) * 100), Math.round((roomFixed.length / total) * 100))}%` : '0%',
-                          borderRadius: '0 8px 8px 0',
-                          background: '#6366f1',
-                        }} />
-                      )}
                     </div>
 
                     <div className="d-flex flex-wrap gap-2">
@@ -370,16 +343,7 @@ export default function TabAssignments({ grades }) {
                         </div>
                       ))}
 
-                      {/* Fixed Slots */}
-                      {roomFixed.map((f) => (
-                        <div key={`fs-${f.id}`} className="d-flex align-items-center gap-1 px-2 py-1 rounded-pill"
-                          style={{ background: f.color_bg || '#ede9fe', border: '1.5px solid #818cf8', fontSize: '0.8rem' }}>
-                          <i className="bi bi-lock-fill" style={{ color: '#6366f1', fontSize: '0.75rem' }} />
-                          <span style={{ color: f.color_text || '#4338ca', fontWeight: 700 }}>{f.subject_name}</span>
-                        </div>
-                      ))}
-
-                      {roomItems.length === 0 && roomFixed.length === 0 && (
+                      {roomItems.length === 0 && (
                         <p className="text-muted small mb-0">ยังไม่มีการมอบหมาย</p>
                       )}
                     </div>

@@ -57,7 +57,7 @@ function shuffle(arr) {
   return arr;
 }
 
-function generate({ rooms, assignments, fixedSlots, unavailable, rdpList, periodSlots, roomNames }) {
+function generate({ rooms, assignments, fixedSlots, unavailable, rdpList, periodSlots, roomNames, otherSlots = [] }) {
   // ใช้ Number() ทุกที่เพื่อป้องกัน type mismatch จาก MySQL
   const toN = (v) => (v === null || v === undefined ? null : Number(v));
 
@@ -129,16 +129,23 @@ function generate({ rooms, assignments, fixedSlots, unavailable, rdpList, period
     roomDaySubs[rid][day].delete(sid);
   };
 
+  // Pre-fill teacherBusy จาก schedule ชั้นอื่นที่จัดไปแล้ว
+  for (const os of otherSlots) {
+    markT(os.teacher_id, os.day, os.period);
+  }
+
   // Step 1: Place fixed slots
   for (const fs of fixedSlots) {
-    const sid = toN(fs.subject_id);
+    const sid  = toN(fs.subject_id);
+    const ftid = toN(fs.teacher_id);
     let targets = fs.scope === 'room' ? rooms.filter((r) => toN(r.id) === toN(fs.room_id)) : rooms;
     for (const r of targets) {
       const rid = toN(r.id);
       if (fs.period > (rdpMap[rid]?.[fs.day] || 0)) continue;
       if (grid[rid][fs.day][fs.period]) continue;
-      if (roomDaySubs[rid][fs.day].has(sid)) continue; // ★ ป้องกัน fixed ซ้ำวันด้วย
-      grid[rid][fs.day][fs.period] = { subject_id: sid, teacher_id: null, is_fixed: true };
+      if (roomDaySubs[rid][fs.day].has(sid)) continue;
+      grid[rid][fs.day][fs.period] = { subject_id: sid, teacher_id: ftid, is_fixed: true };
+      markT(ftid, fs.day, fs.period); // mark ครูไม่ว่างจาก fixed slot
       roomDaySubs[rid][fs.day].add(sid);
     }
   }
@@ -309,7 +316,18 @@ router.post('/generate/:gradeId', async (req, res) => {
     const [periodSlots]  = await pool.query('SELECT * FROM period_slots WHERE grade_level_id=? ORDER BY period_number', [gradeId]);
     const roomNames      = Object.fromEntries(rooms.map((r) => [r.id, r.room_name]));
 
-    const { slots, warnings } = generate({ rooms, assignments, fixedSlots, unavailable, rdpList, periodSlots, roomNames });
+    // โหลด schedule_slots ของชั้นอื่นที่ครูเหล่านี้สอนอยู่แล้ว เพื่อป้องกันครูสอน 2 ชั้นพร้อมกัน
+    const [otherSlots] = teacherIds.length
+      ? await pool.query(
+          `SELECT ss.teacher_id, ss.day, ss.period
+           FROM schedule_slots ss
+           JOIN schedules sc ON sc.id = ss.schedule_id
+           WHERE ss.teacher_id IN (?) AND sc.grade_level_id != ? AND ss.teacher_id IS NOT NULL`,
+          [teacherIds, gradeId]
+        )
+      : [[]];
+
+    const { slots, warnings } = generate({ rooms, assignments, fixedSlots, unavailable, rdpList, periodSlots, roomNames, otherSlots });
 
     await conn.beginTransaction();
     // Upsert schedule record

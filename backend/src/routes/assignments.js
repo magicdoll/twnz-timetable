@@ -104,7 +104,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT ta.id FROM teacher_assignments ta
+      `SELECT ta.id, ta.teacher_id, ta.room_id, ta.subject_id FROM teacher_assignments ta
        JOIN teachers t ON t.id = ta.teacher_id
        WHERE ta.id = ? AND t.user_id = ?`,
       [req.params.id, req.user.id]
@@ -112,6 +112,12 @@ router.delete('/:id', async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ message: 'ไม่พบการมอบหมาย หรือไม่มีสิทธิ์' });
     }
+    const { teacher_id, room_id, subject_id } = rows[0];
+    // ลบ fixed slots ที่ผูกกับ assignment นี้ไปด้วย
+    await pool.query(
+      'DELETE FROM fixed_slots WHERE teacher_id = ? AND room_id = ? AND subject_id = ?',
+      [teacher_id, room_id, subject_id]
+    );
     await pool.query('DELETE FROM teacher_assignments WHERE id = ?', [req.params.id]);
     res.json({ message: 'ลบการมอบหมายเรียบร้อย' });
   } catch (err) {
