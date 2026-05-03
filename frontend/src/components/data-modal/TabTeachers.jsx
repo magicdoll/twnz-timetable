@@ -1,5 +1,5 @@
 import { toast, confirm as swalConfirm } from '../../utils/alert';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 
 export default function TabTeachers() {
@@ -8,6 +8,11 @@ export default function TabTeachers() {
   const [form, setForm] = useState({ display_name: '', nickname: '' });
   const [editing, setEditing] = useState(null);
   const [msg, setMsg] = useState({ type: '', text: '' });
+
+  const fileRef = useRef(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   const load = useCallback(async () => {
     try { const { data } = await api.get('/teachers'); setTeachers(data); }
@@ -43,6 +48,30 @@ export default function TabTeachers() {
   const startEdit = (t) => { setEditing(t.id); setForm({ display_name: t.display_name, nickname: t.nickname || '' }); };
   const cancelEdit = () => { setEditing(null); setForm({ display_name: '', nickname: '' }); };
 
+  const downloadTemplate = () => {
+    const a = document.createElement('a');
+    a.href = '/templates/จัดการข้อมูล-ครูผู้สอน.xlsx';
+    a.download = 'จัดการข้อมูล-ครูผู้สอน.xlsx';
+    a.click();
+  };
+
+  const importExcel = async () => {
+    if (!selectedFile) return;
+    setImporting(true); setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      const { data } = await api.post('/teachers/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setImportResult(data);
+      setSelectedFile(null);
+      if (fileRef.current) fileRef.current.value = '';
+      load();
+    } catch (err) {
+      setImportResult({ error: err.response?.data?.message || 'เกิดข้อผิดพลาด' });
+    }
+    setImporting(false);
+  };
+
   if (loading) return <div className="text-center py-5"><div className="spinner-border" style={{ color: 'var(--pink)' }} /></div>;
 
   return (
@@ -72,6 +101,38 @@ export default function TabTeachers() {
               </button>
               {editing && <button className="btn btn-outline-secondary" onClick={cancelEdit}>ยกเลิก</button>}
             </div>
+          </div>
+        </div>
+
+        {/* Import from Excel */}
+        <div className="card card-pink mt-3">
+          <div className="card-header"><i className="bi bi-file-earmark-arrow-up me-2" />นำเข้าจาก Excel</div>
+          <div className="card-body">
+            <p className="small text-muted mb-3">โหลด Template ไปกรอกชื่อครู แล้วอัปโหลดกลับมา</p>
+            <button className="btn btn-outline-pink btn-sm w-100 mb-2" onClick={downloadTemplate}>
+              <i className="bi bi-download me-2" />โหลด Template (.xlsx)
+            </button>
+            <input type="file" ref={fileRef} accept=".xlsx,.xls" className="d-none"
+              onChange={(e) => { setSelectedFile(e.target.files[0] || null); setImportResult(null); }} />
+            <button className="btn btn-outline-secondary btn-sm w-100 mb-2" onClick={() => fileRef.current?.click()}>
+              <i className="bi bi-file-earmark-excel me-2" style={{ color: '#217346' }} />
+              {selectedFile ? selectedFile.name : 'เลือกไฟล์ Excel'}
+            </button>
+            {selectedFile && (
+              <button className="btn btn-pink btn-sm w-100" onClick={importExcel} disabled={importing}>
+                {importing
+                  ? <span className="spinner-border spinner-border-sm me-2" />
+                  : <i className="bi bi-upload me-2" />}
+                นำเข้าข้อมูล
+              </button>
+            )}
+            {importResult && (
+              <div className={`alert py-2 small mt-2 mb-0 ${importResult.error ? 'alert-danger' : 'alert-success'}`}>
+                {importResult.error
+                  ? <><i className="bi bi-x-circle me-1" />{importResult.error}</>
+                  : <><i className="bi bi-check-circle me-1" />เพิ่มใหม่ {importResult.inserted} คน · อัปเดต {importResult.updated} คน</>}
+              </div>
+            )}
           </div>
         </div>
       </div>

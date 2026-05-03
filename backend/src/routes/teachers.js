@@ -1,6 +1,10 @@
 const router = require('express').Router();
 const pool = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
+const multer = require('multer');
+const ExcelJS = require('exceljs');
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 router.use(authMiddleware);
 
@@ -39,6 +43,75 @@ router.post('/', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// GET /api/teachers/template — download Excel template
+router.get('/template', async (req, res) => {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('ครูผู้สอน');
+
+  sheet.columns = [
+    { header: 'ลำดับ', key: 'no', width: 8 },
+    { header: 'ชื่อ-นามสกุล', key: 'display_name', width: 35 },
+    { header: 'ชื่อเล่น / ย่อ', key: 'nickname', width: 18 },
+  ];
+
+  const headerRow = sheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: 'FF880E4F' } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE4EC' } };
+  headerRow.alignment = { horizontal: 'center' };
+  headerRow.height = 20;
+
+  for (let i = 1; i <= 100; i++) {
+    const row = sheet.addRow({ no: i, display_name: '', nickname: '' });
+    row.getCell(1).alignment = { horizontal: 'center' };
+    row.getCell(1).font = { color: { argb: 'FF999999' } };
+  }
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="teachers-template.xlsx"');
+  await workbook.xlsx.write(res);
+  res.end();
+});
+
+// POST /api/teachers/import — import teachers from Excel
+router.post('/import', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'กรุณาเลือกไฟล์' });
+  try {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(req.file.buffer);
+    const sheet = workbook.worksheets[0];
+
+    const rows = [];
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      const name = row.getCell(2).value?.toString().trim();
+      const nick = row.getCell(3).value?.toString().trim() || null;
+      if (name) rows.push({ display_name: name, nickname: nick });
+    });
+
+    if (!rows.length) return res.status(400).json({ message: 'ไม่พบข้อมูล กรุณาตรวจสอบไฟล์' });
+
+    let inserted = 0, updated = 0;
+    for (const { display_name, nickname } of rows) {
+      const [existing] = await pool.query(
+        'SELECT id FROM teachers WHERE display_name = ? AND user_id = ?',
+        [display_name, req.user.id]
+      );
+      if (existing.length > 0) {
+        await pool.query('UPDATE teachers SET nickname = ? WHERE id = ?', [nickname, existing[0].id]);
+        updated++;
+      } else {
+        await pool.query('INSERT INTO teachers (user_id, display_name, nickname) VALUES (?, ?, ?)',
+          [req.user.id, display_name, nickname]);
+        inserted++;
+      }
+    }
+    res.json({ message: 'นำเข้าสำเร็จ', inserted, updated, total: rows.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาด: ' + err.message });
   }
 });
 

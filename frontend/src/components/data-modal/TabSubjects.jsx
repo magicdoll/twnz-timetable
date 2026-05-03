@@ -1,5 +1,5 @@
 import { toast, confirm as swalConfirm } from '../../utils/alert';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
 
 const PRESET_COLORS = [
@@ -30,6 +30,11 @@ export default function TabSubjects({ grades = [], sharedGrade = '', onGradeChan
   const [form, setForm] = useState(EMPTY_FORM);
   const [editing, setEditing] = useState(null);
   const [msg, setMsg] = useState({ type: '', text: '' });
+
+  const fileRef = useRef(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   useEffect(() => {
     if (!selectedGrade && grades?.length) setSelectedGrade(String(grades[0].id));
@@ -75,6 +80,31 @@ export default function TabSubjects({ grades = [], sharedGrade = '', onGradeChan
   };
   const cancelEdit = () => { setEditing(null); setForm(EMPTY_FORM); };
 
+  const downloadTemplate = () => {
+    const a = document.createElement('a');
+    a.href = '/templates/จัดการข้อมูล-วิชา.xlsx';
+    a.download = 'จัดการข้อมูล-วิชา.xlsx';
+    a.click();
+  };
+
+  const importExcel = async () => {
+    if (!selectedFile || !selectedGrade) return;
+    setImporting(true); setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('grade_level_id', selectedGrade);
+      const { data } = await api.post('/subjects/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setImportResult(data);
+      setSelectedFile(null);
+      if (fileRef.current) fileRef.current.value = '';
+      load();
+    } catch (err) {
+      setImportResult({ error: err.response?.data?.message || 'เกิดข้อผิดพลาด' });
+    }
+    setImporting(false);
+  };
+
   const gradeSubjects = subjects.filter((s) => String(s.grade_level_id) === selectedGrade);
 
   if (loading) return <div className="text-center py-5"><div className="spinner-border" style={{ color: 'var(--pink)' }} /></div>;
@@ -111,12 +141,12 @@ export default function TabSubjects({ grades = [], sharedGrade = '', onGradeChan
             <div className="card-body">
               {msg.text && <div className={`alert alert-${msg.type} py-2 small mb-3`}>{msg.text}</div>}
               <div className="mb-2">
-                <label className="form-label fw-semibold small">ชื่อวิชา <span className="text-danger">*</span></label>
-                <input className="form-control" placeholder="เช่น คณิตศาสตร์" value={form.name} onChange={upd('name')} />
-              </div>
-              <div className="mb-3">
                 <label className="form-label fw-semibold small">รหัสวิชา</label>
                 <input className="form-control" placeholder="เช่น MATH101" value={form.code} onChange={upd('code')} />
+              </div>
+              <div className="mb-3">
+                <label className="form-label fw-semibold small">ชื่อวิชา <span className="text-danger">*</span></label>
+                <input className="form-control" placeholder="เช่น คณิตศาสตร์" value={form.name} onChange={upd('name')} />
               </div>
 
               <div className="mb-3">
@@ -177,6 +207,38 @@ export default function TabSubjects({ grades = [], sharedGrade = '', onGradeChan
                 </button>
                 {editing && <button className="btn btn-outline-secondary" onClick={cancelEdit}>ยกเลิก</button>}
               </div>
+            </div>
+          </div>
+
+          {/* Import from Excel */}
+          <div className="card card-pink mt-3">
+            <div className="card-header"><i className="bi bi-file-earmark-arrow-up me-2" />นำเข้าจาก Excel</div>
+            <div className="card-body">
+              <p className="small text-muted mb-3">โหลด Template ไปกรอกข้อมูล แล้วอัปโหลดกลับมา ระบบจะนำเข้าวิชาให้ชั้นที่เลือกไว้ข้างบน</p>
+              <button className="btn btn-outline-pink btn-sm w-100 mb-2" onClick={downloadTemplate}>
+                <i className="bi bi-download me-2" />โหลด Template (.xlsx)
+              </button>
+              <input type="file" ref={fileRef} accept=".xlsx,.xls" className="d-none"
+                onChange={(e) => { setSelectedFile(e.target.files[0] || null); setImportResult(null); }} />
+              <button className="btn btn-outline-secondary btn-sm w-100 mb-2" onClick={() => fileRef.current?.click()}>
+                <i className="bi bi-file-earmark-excel me-2" style={{ color: '#217346' }} />
+                {selectedFile ? selectedFile.name : 'เลือกไฟล์ Excel'}
+              </button>
+              {selectedFile && (
+                <button className="btn btn-pink btn-sm w-100" onClick={importExcel} disabled={importing || !selectedGrade}>
+                  {importing
+                    ? <span className="spinner-border spinner-border-sm me-2" />
+                    : <i className="bi bi-upload me-2" />}
+                  นำเข้าวิชา
+                </button>
+              )}
+              {importResult && (
+                <div className={`alert py-2 small mt-2 mb-0 ${importResult.error ? 'alert-danger' : 'alert-success'}`}>
+                  {importResult.error
+                    ? <><i className="bi bi-x-circle me-1" />{importResult.error}</>
+                    : <><i className="bi bi-check-circle me-1" />เพิ่มใหม่ {importResult.inserted} วิชา · อัปเดต {importResult.updated} วิชา</>}
+                </div>
+              )}
             </div>
           </div>
         </div>
