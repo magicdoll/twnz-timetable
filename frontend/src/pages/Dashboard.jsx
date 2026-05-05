@@ -47,26 +47,21 @@ export default function Dashboard() {
       for (const grade of g.data) {
         let allPass = true;
         const roomResults = [];
+        const [rdp, asgn] = await Promise.all([
+          api.get(`/grades/${grade.id}/room-day-periods`),
+          api.get('/assignments'),
+        ]);
         for (const room of grade.rooms || []) {
-          const [rdp, asgn, fs] = await Promise.all([
-            api.get(`/grades/${grade.id}/room-day-periods`),
-            api.get('/assignments'),
-            api.get('/fixed-slots'),
-          ]);
           const total = rdp.data.periods
             .filter((p) => p.room_id === room.id)
             .reduce((s, p) => s + p.period_count, 0);
           const assigned = asgn.data
             .filter((a) => a.room_id === room.id)
             .reduce((s, a) => s + a.periods_per_week, 0);
-          const fixed = fs.data.filter((f) =>
-            f.room_id === room.id || f.grade_level_id === grade.id || f.scope === 'all'
-          ).length;
-          const totalAssigned = assigned + fixed;
-          const diff = total - totalAssigned;
+          const diff = total - assigned;
           const pass = diff === 0 && total > 0;
           if (!pass) allPass = false;
-          roomResults.push({ roomId: room.id, room_name: room.room_name, total, assigned: totalAssigned, diff, pass });
+          roomResults.push({ roomId: room.id, room_name: room.room_name, total, assigned, diff, pass });
         }
         valMap[grade.id] = { allPass: allPass && (grade.rooms?.length > 0), rooms: roomResults };
       }
@@ -202,18 +197,22 @@ export default function Dashboard() {
                             return (
                               <span key={r.id} className="badge rounded-pill px-2"
                                 style={{
-                                  background: rv?.pass ? '#e8f5e9' : '#fff3e0',
-                                  color: rv?.pass ? '#1b5e20' : '#e65100',
-                                  border: `1px solid ${rv?.pass ? '#a5d6a7' : '#ffcc80'}`,
+                                  background: rv?.pass ? '#e8f5e9' : rv?.diff < 0 ? '#fdecea' : '#fff3e0',
+                                  color: rv?.pass ? '#1b5e20' : rv?.diff < 0 ? '#b71c1c' : '#e65100',
+                                  border: `1px solid ${rv?.pass ? '#a5d6a7' : rv?.diff < 0 ? '#ef9a9a' : '#ffcc80'}`,
                                   fontSize: '0.75rem',
                                 }}>
                                 {r.room_name}
-                                {rv && !rv.pass && (
-                                  <span className="ms-1">
-                                    {rv.diff > 0 ? `−${rv.diff}` : `+${Math.abs(rv.diff)}`}
-                                  </span>
-                                )}
                                 {rv?.pass && <i className="bi bi-check ms-1" />}
+                                {rv && !rv.pass && rv.diff > 0 && (
+                                  <span className="ms-1">ขาด {rv.diff} คาบ</span>
+                                )}
+                                {rv && !rv.pass && rv.diff < 0 && (
+                                  <span className="ms-1">เกิน {Math.abs(rv.diff)} คาบ</span>
+                                )}
+                                {rv && !rv.pass && rv.diff === 0 && rv.total === 0 && (
+                                  <span className="ms-1">ยังไม่ตั้งค่าคาบ</span>
+                                )}
                               </span>
                             );
                           })}
