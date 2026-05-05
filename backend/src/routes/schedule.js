@@ -150,10 +150,16 @@ function generate({ rooms, assignments, fixedSlots, unavailable, rdpList, period
     }
   }
 
-  // Step 2: Build + shuffle pool
+  // Step 2: Build + shuffle pool (หัก fixed slots ที่ลงไปแล้วออกก่อน)
   const assignPool = [];
   for (const a of assignments) {
-    for (let i = 0; i < a.periods_per_week; i++) {
+    const fixedCount = fixedSlots.filter((fs) =>
+      toN(fs.teacher_id) === toN(a.teacher_id) &&
+      toN(fs.room_id)    === toN(a.room_id) &&
+      toN(fs.subject_id) === toN(a.subject_id)
+    ).length;
+    const remaining = Math.max(0, a.periods_per_week - fixedCount);
+    for (let i = 0; i < remaining; i++) {
       assignPool.push({
         teacher_id: toN(a.teacher_id),
         room_id:    toN(a.room_id),

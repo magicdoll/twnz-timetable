@@ -149,6 +149,19 @@ export default function ManualEditorModal({
       .filter(Boolean);
   }, [assignments, allSlots, focusRoomId]);
 
+  // ── Subject progress (all subjects for this room) ─────────────────────────
+  const subjectProgress = useMemo(() => {
+    return assignments
+      .filter((a) => a.room_id === focusRoomId)
+      .map((a) => {
+        const placed = allSlots.filter(
+          (s) => s.room_id === focusRoomId && s.subject_id === a.subject_id && s.teacher_id === a.teacher_id
+        ).length;
+        const status = placed === a.periods_per_week ? 'exact' : placed > a.periods_per_week ? 'over' : 'under';
+        return { ...a, placed, status };
+      });
+  }, [assignments, allSlots, focusRoomId]);
+
   // ── Highlights (computed from mode+target) ───────────────────────────────
   const highlights = useMemo(() => {
     const slotIds    = new Set(); // slot IDs to highlight (blue/green in timetable)
@@ -475,6 +488,39 @@ export default function ManualEditorModal({
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Subject Progress */}
+              <div style={{ padding: '1rem', borderBottom: '1px solid var(--pink-light)' }}>
+                <div className="fw-bold mb-2" style={{ color: 'var(--pink-dark)', fontSize: '0.9rem' }}>
+                  <i className="bi bi-bar-chart-fill me-1" />สรุปวิชาในห้องนี้
+                </div>
+                {subjectProgress.length === 0
+                  ? <div className="text-muted small">ยังไม่มีการมอบหมาย</div>
+                  : subjectProgress.map((sp) => {
+                    const bg    = sp.status === 'exact' ? '#e8f5e9' : sp.status === 'over' ? '#fdecea' : '#fff8e1';
+                    const color = sp.status === 'exact' ? '#1b5e20' : sp.status === 'over' ? '#b71c1c' : '#e65100';
+                    const bdr   = sp.status === 'exact' ? '#a5d6a7' : sp.status === 'over' ? '#ef9a9a' : '#ffe082';
+                    const icon  = sp.status === 'exact' ? '✅' : sp.status === 'over' ? '⚠️' : '🔸';
+                    return (
+                      <div key={`${sp.subject_id}_${sp.teacher_id}`}
+                        className="d-flex align-items-center justify-content-between rounded-2 px-2 py-1 mb-1"
+                        style={{ background: bg, border: `1.5px solid ${bdr}` }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="fw-semibold" style={{ color: sp.color_text || color, fontSize: '0.8rem', lineHeight: 1.2 }}
+                            title={sp.subject_name}>
+                            {icon} {sp.subject_name}
+                          </div>
+                          <div style={{ color, opacity: 0.75, fontSize: '0.68rem' }}>
+                            {sp.nickname || sp.teacher_name?.split(' ')[0]}
+                          </div>
+                        </div>
+                        <span className="fw-bold ms-2" style={{ color, fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
+                          {sp.placed}/{sp.periods_per_week}
+                        </span>
+                      </div>
+                    );
+                  })}
               </div>
 
               {/* Legend */}
