@@ -86,7 +86,10 @@ export default function SchedulePage() {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `ตาราง_${gradeName}.xlsx`;
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const ts = `${now.getFullYear()}_${pad(now.getMonth()+1)}_${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      a.download = `ตารางชั้นเรียน_${gradeName}_${ts}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -247,6 +250,13 @@ export default function SchedulePage() {
             <span className="text-muted small">บันทึก {fmtDT(sched.last_saved_at)}</span>
           )}
 
+          {/* Clear — แยกออกมาซ้าย ห่างจากปุ่ม Export */}
+          {sched && (
+            <button className="btn btn-outline-secondary" onClick={handleClear}>
+              <i className="bi bi-trash me-1" />🗑️ Clear
+            </button>
+          )}
+
           <div className="ms-auto d-flex gap-2 flex-wrap">
             <button className="btn btn-pink" onClick={handleGenerate} disabled={generating || !canGenerate}>
               {generating ? <span className="spinner-border spinner-border-sm me-2" /> : <i className="bi bi-shuffle me-2" />}
@@ -255,9 +265,6 @@ export default function SchedulePage() {
             </button>
             {sched && (
               <>
-                <button className="btn btn-outline-secondary" onClick={handleClear}>
-                  <i className="bi bi-trash me-1" />🗑️ Clear
-                </button>
                 {Object.keys(warningsByRoom).length > 0 && (
                   <span className="badge bg-warning text-dark align-self-center">
                     <i className="bi bi-exclamation-triangle me-1" />{Object.keys(warningsByRoom).length} ห้องมีปัญหา
