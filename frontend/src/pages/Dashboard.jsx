@@ -36,6 +36,7 @@ export default function Dashboard() {
   const [loadingData, setLoadingData] = useState(true);
 
   const loadData = useCallback(async () => {
+    setLoadingData(true);
     try {
       const [t, s, g] = await Promise.all([
         api.get('/teachers'), api.get('/subjects'), api.get('/grades'),

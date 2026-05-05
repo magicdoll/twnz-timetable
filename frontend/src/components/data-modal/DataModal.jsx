@@ -42,7 +42,7 @@ export default function DataModal({ show, onClose }) {
   return (
     <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.6)', zIndex: 1050 }}>
       <div className="modal-dialog modal-fullscreen">
-        <div className="modal-content border-0" style={{ borderRadius: 0 }}>
+        <div className="modal-content border-0" style={{ borderRadius: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
 
           {/* Header */}
           <div className="modal-header border-0 gradient-pink-orange text-white px-4 py-3">
@@ -60,7 +60,7 @@ export default function DataModal({ show, onClose }) {
           </div>
 
           {/* Tab Nav */}
-          <div className="border-bottom" style={{ background: '#fff', overflowX: 'auto' }}>
+          <div className="border-bottom" style={{ background: '#fff', overflowX: 'auto', flexShrink: 0, position: 'sticky', top: 0, zIndex: 100 }}>
             <div className="d-flex px-3" style={{ minWidth: 'max-content' }}>
               {TABS.map(({ key, icon, label }) => (
                 <button key={key}
@@ -82,7 +82,7 @@ export default function DataModal({ show, onClose }) {
           </div>
 
           {/* Body */}
-          <div className="modal-body p-4" style={{ overflowY: 'auto', background: 'var(--bg)' }}>
+          <div className="modal-body p-4" style={{ overflowY: 'auto', background: 'var(--bg)', flex: 1, minHeight: 0 }}>
             {tab === 'teachers'    && <TabTeachers />}
             {tab === 'subjects'    && <TabSubjects grades={grades} sharedGrade={sharedGrade} onGradeChange={setSharedGrade} />}
             {tab === 'grades'      && <TabGrades onGradesChange={setGrades} />}
