@@ -7,6 +7,7 @@ import TabDayPeriods from './TabDayPeriods';
 import TabAssignments from './TabAssignments';
 import TabFixedSlots from './TabFixedSlots';
 import TabUnavailable from './TabUnavailable';
+import TabOverview from './TabOverview';
 import api from '../../services/api';
 
 const TABS = [
@@ -18,6 +19,7 @@ const TABS = [
   { key: 'assignments', icon: 'bi-person-lines-fill', label: 'มอบหมายสอน' },
   { key: 'fixedslots',  icon: 'bi-lock',           label: 'ล็อคคาบ' },
   { key: 'unavailable', icon: 'bi-calendar-x',    label: 'ครูไม่ว่าง' },
+  { key: 'overview',    icon: 'bi-calendar3-week', label: 'ภาพรวมตาราง' },
 ];
 
 export default function DataModal({ show, onClose }) {
@@ -91,6 +93,7 @@ export default function DataModal({ show, onClose }) {
             {tab === 'assignments' && <TabAssignments grades={grades} sharedGrade={sharedGrade} onGradeChange={setSharedGrade} />}
             {tab === 'fixedslots'  && <TabFixedSlots grades={grades} sharedGrade={sharedGrade} onGradeChange={setSharedGrade} />}
             {tab === 'unavailable' && <TabUnavailable grades={grades} />}
+            {tab === 'overview'    && <TabOverview grades={grades} sharedGrade={sharedGrade} onGradeChange={setSharedGrade} />}
           </div>
         </div>
       </div>
