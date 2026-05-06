@@ -1,7 +1,7 @@
 const DAYS = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์'];
 
 // แถว = วัน, คอลัมน์ = คาบ
-export default function ScheduleTable({ slots, periods, entities, entityKey, labelKey, onCellClick }) {
+export default function ScheduleTable({ slots, periods, entities, entityKey, labelKey, onCellClick, onEntityAction, entityActionLabel = '✏️ Manual' }) {
   const getCell = (entityId, day, period) =>
     slots.find((s) => s[entityKey] === entityId && s.day === day && s.period === period);
 
@@ -18,6 +18,13 @@ export default function ScheduleTable({ slots, periods, entities, entityKey, lab
               <i className={`bi bi-${entityKey === 'room_id' ? 'door-open' : 'person-badge'}`} />
               {entity[labelKey]}
               {entity.nickname && <span className="text-muted small">({entity.nickname})</span>}
+              {onEntityAction && (
+                <button className="btn btn-sm ms-2"
+                  style={{ background: 'linear-gradient(135deg,#a855f7,#6366f1)', color: 'white', fontSize: '0.75rem', padding: '2px 10px', borderRadius: 20 }}
+                  onClick={() => onEntityAction(entity)}>
+                  {entityActionLabel}
+                </button>
+              )}
             </div>
             <div className="table-responsive">
               <table style={{ minWidth: 500, width: '100%', borderCollapse: 'separate', borderSpacing: 3 }}>

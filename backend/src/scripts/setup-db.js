@@ -138,6 +138,7 @@ async function setup() {
         room_id INT NOT NULL,
         day ENUM('จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์') NOT NULL,
         period_count INT NOT NULL DEFAULT 0,
+        UNIQUE KEY uq_room_day (room_id, day),
         FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
 

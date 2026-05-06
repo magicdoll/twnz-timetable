@@ -483,6 +483,8 @@ export default function SchedulePage() {
                     slots={slots} periods={periods}
                     entities={rooms.map((r) => ({ ...r, room_name: r.room_name }))}
                     entityKey="room_id" labelKey="room_name"
+                    onEntityAction={(entity) => openEditor(entity.id)}
+                    entityActionLabel="✏️ Manual Editor"
                   />
                 )}
                 {tab === 'teacher' && (
